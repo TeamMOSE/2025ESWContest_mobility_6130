@@ -1,0 +1,16 @@
+{
+  "theme": "dark",
+  "low_perf_mode": false,
+  "animation_intensity": 1.0,
+  "window_position": [0, 0],
+  "margins": [20, 20, 20, 20],
+  "language": "ko",
+  "ros2": {
+    "node_name": "emergency_hud",
+    "emergency_topic": "/emergency_vehicle/alert",
+    "manual_topic": "/hud/manual_control",
+    "status_topic": "/hud/status",
+    "response_topic": "/hud/user_response"
+  }
+}
+

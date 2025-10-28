@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>haptic_steering_pkg</name>
+  <version>0.0.1</version>
+  <description>Haptic steering decision node for emergency vehicle yielding.</description>
+
+  <maintainer email="dh08080@khu.ac.kr">daehyeon</maintainer>
+  <license>MIT</license>
+
+  <!-- Python 패키지 빌드 도구 -->
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <!-- 실행 의존성 -->
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+
+  <!-- 테스트(선택) -->
+  <!-- <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend> -->
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

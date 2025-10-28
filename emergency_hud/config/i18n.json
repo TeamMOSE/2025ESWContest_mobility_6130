@@ -1,0 +1,25 @@
+{
+  "ko": {
+    "left_move": "← 왼쪽으로 이동",
+    "right_move": "→ 오른쪽으로 이동",
+    "stay_straight": "직진 유지",
+    "stop_yield": "정지 후 양보",
+    "keep_lane": "✓ 올바른 차선입니다",
+    "front_approach": "전면에서 긴급 차량 접근",
+    "rear_approach": "후면에서 긴급 차량 접근",
+    "safety": "주변을 확인하고 양보하세요",
+    "safety_keep": "현재 차선을 유지하세요"
+  },
+  "en": {
+    "left_move": "← Move Left",
+    "right_move": "→ Move Right",
+    "stay_straight": "Keep Straight",
+    "stop_yield": "Stop and Yield",
+    "keep_lane": "✓ Correct Lane",
+    "front_approach": "Emergency Vehicle Approaching from Front",
+    "rear_approach": "Emergency Vehicle Approaching from Rear",
+    "safety": "Check Surroundings and Yield",
+    "safety_keep": "Maintain Current Lane"
+  }
+}
+

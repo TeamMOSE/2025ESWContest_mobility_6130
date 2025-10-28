@@ -1,0 +1,62 @@
+lane_slope_detector:
+  ros__parameters:
+    # 토픽 설정
+    input_topic: '/front_camera'
+    overlay_topic: '/lane/overlay'
+    lane_info_topic: '/lane/info'
+    lane_angle_topic: '/lane/angle'
+    show_debug: false
+    
+    # ROI 설정 (비율 기준, 0.0~1.0) - 최종 조정
+    roi_top_y: 0.62      # 교차로 텍스트 영향 최소화
+    roi_bot_y: 0.98
+    roi_left_x: 0.05
+    roi_right_x: 0.95
+    
+    # 흰색 차선 HSV 범위
+    white_lower: [0, 0, 200]
+    white_upper: [180, 45, 255]
+    
+    # 노란색 차선 HSV 범위
+    yellow_lower: [15, 40, 110]
+    yellow_upper: [40, 255, 255]
+    
+    # 노란선 기준 필터링 - 비활성 (점수화 시스템으로 대체)
+    yellow_min_x_frac: 0.5
+    yellow_ignore_margin_frac: 0.0
+    
+    # Canny 엣지 검출
+    canny_low: 80
+    canny_high: 160
+    
+    # Hough 변환 파라미터 - 가짜 선 억제 최적화
+    hough_rho: 1
+    hough_theta_deg: 1.0
+    hough_thresh: 30
+    hough_min_line_len: 140   # 짧은 조각 강력 억제
+    hough_max_line_gap: 10    # 간격 최소화
+    
+    # 차선 각도 매핑
+    lane_ref_angles_deg: [-25.0, 0.0, 25.0]
+    angle_tolerance_deg: 12.0
+    ema_alpha: 0.4
+    
+    # 수평선 필터링 - 강화
+    min_angle_deg: 30.0
+    
+    # 차선 정보
+    total_lanes: 2
+    
+    # 현재 차로 계산 방식
+    lane_index_mode: 'angle_sign'
+    lane_index_plus_one: true
+    bev_center_x_frac: 0.5
+    center_band_frac: 0.08
+    
+    # 선분 필터링 (하단 앵커/수직 스팬은 코드 내부에서 처리)
+    min_bottom_y_frac: 0.78   # 코드에서 사용 (참고용)
+    min_vertical_span_px: 80  # 코드에서 사용 (참고용)
+    
+    # 중앙 화이트 밴드 차단 (필요시 활성화)
+    white_block_left_x_frac: 0.0   # 0.42로 설정 시 활성
+    white_block_right_x_frac: 0.0  # 0.58로 설정 시 활성

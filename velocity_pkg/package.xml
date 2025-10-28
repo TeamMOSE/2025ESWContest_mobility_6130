@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>velocity_pkg</name>
+  <version>0.0.1</version>
+  <description>Velocity node that reads serial analog values and publishes velocity topic.</description>
+
+  <maintainer email="dh08080@khu.ac.kr">daehyeon</maintainer>
+  <license>MIT</license>
+
+  <!-- Python 패키지 빌드 도구 -->
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <!-- 실행 의존성 -->
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
+
