@@ -5,7 +5,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, QoSHistoryPolicy, QoSDurabilityPolicy, QoSReliabilityPolicy
 from sensor_msgs.msg import CompressedImage, Image
-from std_msgs.msg import Int32, Float32, Int32MultiArray
+from std_msgs.msg import Int32, Float32, Int32MultiArray, String
 from cv_bridge import CvBridge
 
 def ema(prev, new, alpha):
@@ -15,10 +15,10 @@ class LaneSlopeDetector(Node):
     def __init__(self):
         super().__init__('lane_slope_detector')
 
-        # Topic Names
+                # Topic Names
         self.declare_parameter('input_topic', '/front_camera')
         self.declare_parameter('overlay_topic', '/lane/overlay')
-        self.declare_parameter('lane_info_topic', '/lane/info/cv') 
+        self.declare_parameter('lane_info_topic', '/lane/info/cv')
 
         self.declare_parameter('show_debug', False)
 
@@ -122,6 +122,10 @@ class LaneSlopeDetector(Node):
         self.bridge = CvBridge()
         # CompressedImage 구독 (무선 통신 최적화)
         self.sub = self.create_subscription(CompressedImage, self.input_topic + '/compressed', self.on_image, qos_input)
+        
+        # /lane/source 구독 (현재 사용 중인 소스 정보)
+        self.source_sub = self.create_subscription(String, '/lane/source', self.on_source, 10)
+        
         self.pub_overlay = self.create_publisher(Image, self.overlay_topic, qos_output)
         self.pub_lane_info = self.create_publisher(Int32MultiArray, self.lane_info_topic, qos_output)
 
@@ -131,10 +135,16 @@ class LaneSlopeDetector(Node):
         self.miss_streak = 0
         
         self.last_lane = 1
+        
+        self.current_source = "CV"  # 기본값
 
         self.get_logger().info(f'LaneSlopeDetector subscribed: {self.input_topic}/compressed')
         self.get_logger().info(f'Publishing overlay to: {self.overlay_topic}')
         self.get_logger().info(f'QoS: Input=BEST_EFFORT (CompressedImage), Output=RELIABLE')
+
+    def on_source(self, msg: String):
+        """현재 사용 중인 소스 정보 업데이트"""
+        self.current_source = msg.data
 
     def find_yellow_line(self, mask_y, h, w):
         """노란 마스크에서 허프로 여러 조각을 뽑고 조건 필터 후 x=m*y+c로 피팅.
@@ -471,6 +481,15 @@ class LaneSlopeDetector(Node):
         # 디버깅 overlay에 텍스트
         cv2.putText(overlay, f"Lane {current_lane}/{total_lanes_dyn}",
                     (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 255), 3)
+        
+        # 소스 정보 표시
+        if self.current_source == "YOLO":
+            source_color = (0, 255, 0)  # 초록색
+        else:
+            source_color = (255, 128, 0)  # 주황색
+        
+        cv2.putText(overlay, f"Source: {self.current_source}",
+                    (20, 100), cv2.FONT_HERSHEY_SIMPLEX, 1.5, source_color, 4)
 
         # ROI 시각화
         cv2.polylines(overlay, roi_poly, True, (255, 0, 0), 2)

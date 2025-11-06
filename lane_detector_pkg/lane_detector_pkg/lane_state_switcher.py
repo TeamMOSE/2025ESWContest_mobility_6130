@@ -1,13 +1,13 @@
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Int32MultiArray
+from std_msgs.msg import Int32MultiArray, String
 
 
 class lane_state_switcher(Node):
     def __init__(self):
         super().__init__('lane_state_switcher')
 
-        # 구독자 설정
+        # 구독자 설정 - Lane Info
         self.yolo_state_sub = self.create_subscription(
             Int32MultiArray,
             '/lane/info/yolo',
@@ -26,6 +26,12 @@ class lane_state_switcher(Node):
         self.lane_state_pub = self.create_publisher(
             Int32MultiArray,
             '/lane/info',   
+            10
+        )
+
+        self.source_pub = self.create_publisher(
+            String,
+            '/lane/source',
             10
         )
 
@@ -55,6 +61,11 @@ class lane_state_switcher(Node):
         lane_msg = Int32MultiArray()
         lane_msg.data = selected_data
         self.lane_state_pub.publish(lane_msg)
+        
+        # /lane/source로 현재 소스 정보 발행
+        source_msg = String()
+        source_msg.data = source
+        self.source_pub.publish(source_msg)
         
         self.get_logger().info(f'Published to /lane/info: {selected_data} (Source: {source})')
 
