@@ -28,6 +28,8 @@ setup(
             'camera_node = camera_pkg.camera_node:main',
             'yolo_firetruck_node = camera_pkg.yolo_firetruck_node:main',
             'yolo_trafficlight_node = camera_pkg.yolo_trafficlight_node:main',
+            'yolo_frontcar_node = camera_pkg.yolo_frontcar_node:main',
+
         ],
     },
 )

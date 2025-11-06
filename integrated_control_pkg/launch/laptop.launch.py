@@ -58,6 +58,14 @@ def generate_launch_description():
             output='screen',
         ),
 
+        # YOLO 전방 차량 감지 노드
+        Node(
+            package='camera_pkg',
+            executable='yolo_frontcar_node',
+            name='yolo_frontcar',
+            output='screen',
+        ),
+
         # 사이렌 감지기 노드
         Node(
             package='siren_pkg',
@@ -95,6 +103,22 @@ def generate_launch_description():
             package='debug_pkg',
             executable='firetruck_visualizer_node',
             name='firetruck_visualizer_node',
+            output='screen'
+        ),
+
+        # 디버그 시각화 노드 (신호등 감지 오버레이)
+        Node(
+            package='debug_pkg',
+            executable='trafficlight_visualizer_node',
+            name='trafficlight_visualizer_node',
+            output='screen'
+        ),
+
+        # 디버그 시각화 노드 (앞차량 감지 오버레이)
+        Node(
+            package='debug_pkg',
+            executable='frontcar_visualizer_node',
+            name='frontcar_visualizer_node',
             output='screen'
         ),
     ])

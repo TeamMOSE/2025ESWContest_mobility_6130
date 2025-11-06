@@ -24,6 +24,8 @@ setup(
         'console_scripts': [
             # 실행 엔트리 등록
             'firetruck_visualizer_node = debug_pkg.firetruck_visualizer_node:main',
+            'trafficlight_visualizer_node = debug_pkg.trafficlight_visualizer_node:main',
+            'frontcar_visualizer_node = debug_pkg.frontcar_visualizer_node:main',
         ],
     },
 )

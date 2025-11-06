@@ -41,29 +41,23 @@ def generate_launch_description():
         Node(
             package='camera_pkg',
             executable='yolo_firetruck_node',
-            name='yolo_firetruck_rear',
+            name='yolo_firetruck',
             output='screen',
-            parameters=[{
-                'device': 'cpu',
-                'threshold': 0.7,
-                'enable': True,
-                'image_topic': 'back_camera',
-                'side_deadband_frac': 0.10
-            }]
         ),
 
-        # YOLO 전방 소방차 감지 노드
+        # YOLO 전방 신호등 감지 노드
         Node(
             package='camera_pkg',
             executable='yolo_trafficlight_node',
-            name='yolo_trafficlight_rear',
+            name='yolo_trafficlight',
             output='screen',
-            parameters=[{
-                'device': 'cpu',
-                'threshold': 0.7,
-                'enable': True,
-                'image_topic': 'front_camera',
-                'side_deadband_frac': 0.10
-            }]
+        ),
+
+        # YOLO 전방 차량 감지 노드
+        Node(
+            package='camera_pkg',
+            executable='yolo_frontcar_node',
+            name='yolo_frontcar',
+            output='screen',
         ),
     ])
