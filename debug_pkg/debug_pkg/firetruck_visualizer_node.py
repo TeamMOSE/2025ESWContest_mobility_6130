@@ -35,7 +35,7 @@ class FiretruckVisualizerNode(Node):
 
         # params
         # topics
-        self.declare_parameter("image_topic", "back_camera")
+        self.declare_parameter("image_topic", "back_camera/compressed")
         self.declare_parameter("detections_topic", "detections")
 
         # reliability for image subscriber
@@ -79,10 +79,10 @@ class FiretruckVisualizerNode(Node):
         self._kp_pub = self.create_publisher(MarkerArray, "dbg_firetruck_kp_markers", 10)
         
         # subscribers + time sync (CompressedImage 구독)
-        self.image_sub = message_filters.Subscriber(self, CompressedImage, self.image_topic + '/compressed', qos_profile=self.image_qos_profile)
+        self.image_sub = message_filters.Subscriber(self, CompressedImage, self.image_topic, qos_profile=self.image_qos_profile)
         self.det_sub = message_filters.Subscriber(self, DetectionArray, self.detections_topic, qos_profile=10)
         
-        self.get_logger().info(f"✅ Subscribing to {self.image_topic}/compressed with BEST_EFFORT QoS")
+        self.get_logger().info(f"✅ Subscribing to {self.image_topic} with BEST_EFFORT QoS")
         self.get_logger().info(f"✅ Subscribing to {self.detections_topic}")
 
         self._sync = message_filters.ApproximateTimeSynchronizer(

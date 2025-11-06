@@ -4,7 +4,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, QoSHistoryPolicy, QoSReliabilityPolicy, QoSDurabilityPolicy
 
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, CompressedImage
 from std_msgs.msg import Int32MultiArray
 from interfaces_pkg.msg import DetectionArray, BoundingBox2D
 
@@ -17,9 +17,9 @@ class FrontCarVisualizerNode(Node):
         super().__init__("frontcar_visualizer_node")
 
         # ---- Parameters ----
-        self.declare_parameter("image_topic", "front_camera")
+        self.declare_parameter("image_topic", "front_camera/compressed")
         self.declare_parameter("bboxes_topic", "car_bboxes")
-        self.declare_parameter("lane_info_topic", "laneinfo/yolo")
+        self.declare_parameter("lane_info_topic", "/lane/info/yolo")
         self.declare_parameter("output_topic", "frontcar/visualized")
 
         self.declare_parameter("line_thickness", 2)
@@ -38,7 +38,7 @@ class FrontCarVisualizerNode(Node):
             reliability=QoSReliabilityPolicy.BEST_EFFORT,
             history=QoSHistoryPolicy.KEEP_LAST,
             durability=QoSDurabilityPolicy.VOLATILE,
-            depth=1
+            depth=3
         )
 
         self.bridge = CvBridge()
@@ -48,7 +48,7 @@ class FrontCarVisualizerNode(Node):
         self._last_lane: Optional[Tuple[int, int]] = None  # (total_lanes, my_lane)
 
         # Subs / Pub
-        self._sub_img = self.create_subscription(Image, self.image_topic, self._on_image, sensor_qos)
+        self._sub_img = self.create_subscription(CompressedImage, self.image_topic, self._on_image, sensor_qos)
         self._sub_det = self.create_subscription(DetectionArray, self.bboxes_topic, self._on_dets, sensor_qos)
         self._sub_lane = self.create_subscription(Int32MultiArray, self.lane_info_topic, self._on_lane, sensor_qos)
         self._pub_img = self.create_publisher(Image, self.output_topic, 10)
@@ -68,9 +68,9 @@ class FrontCarVisualizerNode(Node):
         else:
             self._last_lane = None
 
-    def _on_image(self, msg: Image):
+    def _on_image(self, msg: CompressedImage):
         try:
-            frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding="bgr8")
+            frame = self.bridge.compressed_imgmsg_to_cv2(msg)
         except Exception as e:
             self.get_logger().warn(f"cv_bridge conversion failed: {e}")
             return

@@ -9,7 +9,7 @@ from ultralytics import YOLO
 from ultralytics.engine.results import Results
 from torch import cuda
 
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, CompressedImage
 from std_msgs.msg import Int32MultiArray
 from interfaces_pkg.msg import (
     BoundingBox2D,
@@ -28,11 +28,15 @@ class YoloFrontCarNode(LifecycleNode):
         self.declare_parameter("enable", True)
 
         # 전방 카메라 토픽
-        self.declare_parameter("image_topic", "front_camera")
+        self.declare_parameter("image_topic", "front_camera/compressed")
 
         # 타깃 클래스 이름/ID (단일 클래스 'cars' 전제)
         self.declare_parameter("target_names", ["cars"])
         self.declare_parameter("target_ids", [])  # 정수 ID 직접 지정 시 우선
+
+        # 로그 출력 간격 (프레임 단위)
+        self.declare_parameter("log_every_n_frames", 30)
+        self.frame_count = 0
 
         self.get_logger().info("YoloFrontCarNode created")
 
@@ -45,6 +49,7 @@ class YoloFrontCarNode(LifecycleNode):
         self.threshold = self.get_parameter("threshold").get_parameter_value().double_value
         self.enable = self.get_parameter("enable").get_parameter_value().bool_value
         self.image_topic = self.get_parameter("image_topic").get_parameter_value().string_value
+        self.log_every_n_frames = self.get_parameter("log_every_n_frames").get_parameter_value().integer_value
 
         # 파라미터 배열 취득
         self.target_names: Set[str] = set(
@@ -55,10 +60,10 @@ class YoloFrontCarNode(LifecycleNode):
 
         # 카메라 QoS (최신 프레임 우선)
         self.image_qos_profile = QoSProfile(
-            reliability=QoSReliabilityPolicy.RELIABLE,
+            reliability=QoSReliabilityPolicy.BEST_EFFORT,
             history=QoSHistoryPolicy.KEEP_LAST,
             durability=QoSDurabilityPolicy.VOLATILE,
-            depth=1
+            depth=3
         )
 
         # 퍼블리셔 (시각화를 위한 bbox + 통합 차로 정보 퍼블리시)
@@ -101,7 +106,7 @@ class YoloFrontCarNode(LifecycleNode):
 
         # 전방 카메라 구독
         self._sub = self.create_subscription(
-            Image,
+            CompressedImage,
             self.image_topic,
             self.image_cb,
             self.image_qos_profile
@@ -249,11 +254,11 @@ class YoloFrontCarNode(LifecycleNode):
         return num_lanes, max(1, min(num_lanes, (num_lanes + 1) // 2))
 
     # ---------- Inference callback ----------
-    def image_cb(self, msg: Image) -> None:
+    def image_cb(self, msg: CompressedImage) -> None:
         if not self.enable:
             return
-
-        cv_image = self.cv_bridge.imgmsg_to_cv2(msg)
+        self.frame_count += 1
+        cv_image = self.cv_bridge.compressed_imgmsg_to_cv2(msg)
         results_list = self.yolo.predict(
             source=cv_image,
             verbose=False,
@@ -291,7 +296,8 @@ class YoloFrontCarNode(LifecycleNode):
             bboxes_msg.detections.append(det)
 
         # 로깅
-        self.get_logger().info(f"Cars in front: {car_count}")
+        if self.frame_count % self.log_every_n_frames == 0:
+            self.get_logger().info(f"Cars in front: {car_count}")
 
         # ---- 퍼블리시 ----
         # 1) bbox만 포함된 DetectionArray
@@ -307,7 +313,8 @@ class YoloFrontCarNode(LifecycleNode):
         lane_msg = Int32MultiArray()
         lane_msg.data = [int(car_count), int(my_lane)]
         self._lane_info_pub.publish(lane_msg)
-        self.get_logger().info(f"[LaneInfo] {int(car_count)},{int(my_lane)}")
+        if self.frame_count % self.log_every_n_frames == 0:
+            self.get_logger().info(f"[LaneInfo] {int(car_count)},{int(my_lane)}")
 
         # 메모리 정리
         del results
@@ -326,3 +333,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

@@ -97,6 +97,23 @@ def generate_launch_description():
             name='integrated_control_node',
             output='screen',
         ),
+        
+        
+        # 속도 매핑
+        Node(
+            package='haptic_steering_pkg',
+            executable='car_speed_map_node',
+            name='car_speed_map_node',
+            output='screen',
+        ),
+        
+        # Serial Reader
+        Node(
+            package='haptic_steering_pkg',
+            executable='handle_serial_reader_node',
+            name='handle_serial_reader_node',
+            output='screen',
+        ),
 
         # 디버그 시각화 노드 (소방차 감지 오버레이)
         Node(

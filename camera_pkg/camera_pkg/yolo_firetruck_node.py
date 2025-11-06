@@ -29,8 +29,8 @@ class YoloFiretruckNode(LifecycleNode):
         self.declare_parameter("enable", True)
         # self.declare_parameter("image_reliability", QoSReliabilityPolicy.RELIABLE)
 
-        # 구독할 카메라 토픽 (기본: back_camera)
-        self.declare_parameter("image_topic", "back_camera")
+        # 구독할 카메라 토픽 (기본: back_camera/compressed)
+        self.declare_parameter("image_topic", "back_camera/compressed")
 
         # 타깃 클래스 필터(이름/ID) — 기본은 firetruck, car만 허용(정확한 이름 매칭)
         # (커스텀 가중치에서는 'fire truck' 클래스를 직접 지정 가능)
@@ -117,11 +117,11 @@ class YoloFiretruckNode(LifecycleNode):
         # CompressedImage 구독 (압축 이미지)
         self._sub = self.create_subscription(
             CompressedImage,
-            self.image_topic + '/compressed',  # back_camera/compressed
+            self.image_topic,  # e.g. back_camera/compressed
             self.image_cb,
             self.image_qos_profile
         )
-        self.get_logger().info(f"Subscribing to {self.image_topic}/compressed with BEST_EFFORT QoS")
+        self.get_logger().info(f"Subscribing to {self.image_topic} with BEST_EFFORT QoS")
         self.get_logger().info(f"프레임 스킵: 매 {self.process_every_n_frames}프레임마다 처리 (CPU 부하 감소)")
 
         super().on_activate(state)
@@ -241,9 +241,8 @@ class YoloFiretruckNode(LifecycleNode):
         if self.frame_counter % self.process_every_n_frames != 0:
             return
 
-        # CompressedImage 압축 해제
-        np_arr = np.frombuffer(msg.data, np.uint8)
-        cv_image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+        # CompressedImage 압축 해제 (CvBridge 사용)
+        cv_image = self.cv_bridge.compressed_imgmsg_to_cv2(msg)
         results_list = self.yolo.predict(
             source=cv_image,
             verbose=False,

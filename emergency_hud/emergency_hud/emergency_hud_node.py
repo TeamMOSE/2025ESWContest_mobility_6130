@@ -8,9 +8,9 @@ from pathlib import Path
 
 # PyQt6 임포트 (GUI 모드에서만)
 try:
-    from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QGraphicsOpacityEffect
+    from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QGraphicsOpacityEffect, QProgressBar, QHBoxLayout
     from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QPropertyAnimation, QEasingCurve
-    from PyQt6.QtGui import QKeyEvent, QFont, QResizeEvent
+    from PyQt6.QtGui import QKeyEvent, QFont, QResizeEvent, QShowEvent
     PYQT6_AVAILABLE = True
 except ImportError:
     PYQT6_AVAILABLE = False
@@ -18,7 +18,7 @@ except ImportError:
 
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String
+from std_msgs.msg import String, Float32
 
 
 class EmergencyHUDWidget(QWidget):
@@ -75,6 +75,55 @@ class EmergencyHUDWidget(QWidget):
         self.safety_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.safety_text.setStyleSheet("color: #EAF2FF; background-color: transparent;")
         layout.addWidget(self.safety_text)
+
+        # 속도 게이지 컨테이너 (오른쪽 아래에 오버레이로 배치)
+        self.speed_container = QWidget(self)
+        self.speed_container.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        speed_layout = QVBoxLayout()
+        speed_layout.setContentsMargins(0, 0, 0, 0)
+        speed_layout.setSpacing(15)
+        speed_layout.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom)
+        self.speed_container.setLayout(speed_layout)
+        self.speed_container.setStyleSheet("background: transparent;")
+        
+        # 속도 게이지 (세로 방향, 크게)
+        self.speed_gauge = QProgressBar()
+        self.speed_gauge.setMinimum(0)
+        self.speed_gauge.setMaximum(60)
+        self.speed_gauge.setValue(0)
+        self.speed_gauge.setOrientation(Qt.Orientation.Vertical)
+        self.speed_gauge.setFixedSize(120, 450)
+        self.speed_gauge.setStyleSheet("""
+            QProgressBar {
+                border: 4px solid rgba(255, 255, 255, 0.5);
+                border-radius: 12px;
+                background-color: rgba(0, 0, 0, 0.3);
+                text-align: center;
+                color: white;
+                font-size: 24px;
+                font-weight: bold;
+            }
+            QProgressBar::chunk {
+                background-color: rgba(76, 175, 80, 0.9);
+                border-radius: 8px;
+            }
+        """)
+        self.speed_gauge.setFormat("%v")
+        
+        # 속도 숫자 표시 (작게, 아래)
+        self.speed_label = QLabel("0 km/h")
+        self.speed_label.setFont(QFont("DejaVu Sans Mono", 12, QFont.Weight.Bold))
+        self.speed_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.speed_label.setStyleSheet("color: rgba(255, 255, 255, 0.95); background-color: rgba(0, 0, 0, 0.5); padding: 15px 22px; border-radius: 12px;")
+        self.speed_label.setFixedWidth(120)
+        self.speed_label.setMinimumHeight(60)
+        
+        speed_layout.addWidget(self.speed_gauge)
+        speed_layout.addWidget(self.speed_label)
+        
+        # 속도 게이지 초기 위치 설정
+        self.speed_container.show()
+        self.speed_container.raise_()
 
         # 애니메이션 상태
         self.current_arrow_type = None
@@ -176,6 +225,35 @@ class EmergencyHUDWidget(QWidget):
         self.opacity.setOpacity(1.0)
         print("All animations stopped and cleared")
     
+    def update_speed_display(self, speed):
+        """속도 게이지 및 숫자 업데이트"""
+        # 게이지 값 업데이트
+        self.speed_gauge.setValue(int(speed))
+        
+        # 숫자 레이블 업데이트
+        self.speed_label.setText(f"{int(speed)} km/h")
+    
+    def showEvent(self, event: QShowEvent):
+        """위젯이 표시될 때 속도 게이지 위치 설정"""
+        super().showEvent(event)
+        self._update_speed_container_position()
+    
+    def resizeEvent(self, event: QResizeEvent):
+        """위젯 크기 변경 시 속도 게이지 위치 조정"""
+        super().resizeEvent(event)
+        self._update_speed_container_position()
+    
+    def _update_speed_container_position(self):
+        """속도 게이지 컨테이너 위치 업데이트"""
+        if hasattr(self, 'speed_container'):
+            # 고정 크기 계산 (게이지 120px, 높이 450px + 레이블 60px + 간격 15px = 525px)
+            container_width = 120
+            container_height = 525
+            # 오른쪽 아래에 배치
+            x = self.width() - container_width - 50
+            y = self.height() - container_height - 50
+            self.speed_container.setGeometry(x, y, container_width, container_height)
+    
     def keyPressEvent(self, event):
         """키보드 이벤트를 부모 윈도우로 전달"""
         if self.parent():
@@ -244,6 +322,7 @@ class EmergencyHUDNode(Node):
         # 수신된 데이터 저장
         self.sound_direction = None  # front/back
         self.decision = None  # Right/Left/Stop/Caution/None
+        self.car_speed = 0.0  # 0~60 km/h
         
         # ROS2 구독자 설정
         self.setup_subscribers()
@@ -382,7 +461,15 @@ class EmergencyHUDNode(Node):
             10
         )
         
-        self.get_logger().info('구독 완료: sound_direction, decision')
+        # 차량 속도 구독 (0~60 km/h)
+        self.car_speed_sub = self.create_subscription(
+            Float32,
+            '/car_speed',
+            self.car_speed_callback,
+            10
+        )
+        
+        self.get_logger().info('구독 완료: sound_direction, decision, /car_speed')
 
     def sound_direction_callback(self, msg):
         """
@@ -418,6 +505,21 @@ class EmergencyHUDNode(Node):
             self.update_display()
         else:
             self.get_logger().warn(f'잘못된 decision 값: {msg.data}')
+
+    def car_speed_callback(self, msg):
+        """
+        차량 속도 콜백
+        
+        토픽: /car_speed
+        타입: Float32
+        값: 0~60 km/h
+        """
+        speed = max(0.0, min(60.0, msg.data))  # 0~60 범위로 제한
+        self.car_speed = speed
+        
+        # GUI 업데이트
+        if self.gui_mode and self.gui_widget:
+            self.gui_widget.central_widget.update_speed_display(speed)
 
     def send_test_message(self, direction):
         """테스트 메시지 전송 (키보드 입력용)"""

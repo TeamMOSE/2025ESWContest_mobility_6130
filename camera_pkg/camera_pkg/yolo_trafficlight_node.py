@@ -29,8 +29,8 @@ class YoloTrafficLightNode(LifecycleNode):
         self.declare_parameter("threshold", 0.6)
         self.declare_parameter("enable", True)
 
-        # 전방 카메라 구독 토픽 (요청 사양: front_camera)
-        self.declare_parameter("image_topic", "front_camera")
+        # 전방 카메라 구독 토픽 (요청 사양: front_camera/compressed)
+        self.declare_parameter("image_topic", "front_camera/compressed")
 
         # 타깃 클래스 (이름/ID) — 기본은 traffic light만
         # 모델에 따라 이름이 'traffic light', 'traffic_light', 'Traffic_Light' 등일 수 있어 약간 너그럽게 포함
@@ -118,11 +118,11 @@ class YoloTrafficLightNode(LifecycleNode):
         # CompressedImage 구독 (압축 이미지)
         self._sub = self.create_subscription(
             CompressedImage,
-            self.image_topic + '/compressed',  # front_camera/compressed
+            self.image_topic,  # e.g. front_camera/compressed
             self.image_cb,
             self.image_qos_profile
         )
-        self.get_logger().info(f"Subscribing to {self.image_topic}/compressed with BEST_EFFORT QoS")
+        self.get_logger().info(f"Subscribing to {self.image_topic} with BEST_EFFORT QoS")
         self.get_logger().info(f"프레임 스킵: 매 {self.process_every_n_frames}프레임마다 처리 (CPU 부하 감소)")
 
         super().on_activate(state)
@@ -225,9 +225,8 @@ class YoloTrafficLightNode(LifecycleNode):
         if self.frame_counter % self.process_every_n_frames != 0:
             return
 
-        # CompressedImage 압축 해제
-        np_arr = np.frombuffer(msg.data, np.uint8)
-        cv_image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+        # CompressedImage 압축 해제 (CvBridge 사용)
+        cv_image = self.cv_bridge.compressed_imgmsg_to_cv2(msg)
         results_list = self.yolo.predict(
             source=cv_image,
             verbose=False,

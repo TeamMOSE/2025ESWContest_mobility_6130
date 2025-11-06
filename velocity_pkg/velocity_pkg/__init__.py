@@ -1,2 +1,0 @@
-# velocity_pkg package
-

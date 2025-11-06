@@ -1,1 +1,53 @@
 siren_pkg/models
+# =========================
+# ROS 2 / colcon (src 기준)
+# =========================
+../build/
+../install/
+../log/
+../.colcon_cache/
+../.ros/
+# 흔히 생성되는 컴파일 DB
+../compile_commands.json
+
+# =================
+# Python artifacts
+# =================
+**/__pycache__/
+**/*.py[cod]
+**/*.pyo
+*.egg-info/
+*.dist-info/
+.eggs/
+# 패키지 배포 산출물(혹시 패키지화 테스트 시)
+build/
+dist/
+
+# Type checker / Lint / Test 캐시
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+pytest.xml
+
+# ==========
+# ROS bags
+# ==========
+# rosbag2 기본 포맷(용량 큼 → 보통 미추적)
+*.db3
+*.mcap
+rosbag2_*/
+
+# ======================
+# Editors / OS / others
+# ======================
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+.DS_Store
+Thumbs.db
+*.log
+
